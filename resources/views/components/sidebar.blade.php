@@ -55,7 +55,7 @@
     </li>
 
     <li class="menu-item">
-      <a href="#" class="menu-link">
+      <a href="{{ route('fasilitas.index') }}" class="menu-link">
         <i class="menu-icon tf-icons bx bx-building-house"></i>
         <div class="text-truncate">Fasilitas</div>
       </a>
