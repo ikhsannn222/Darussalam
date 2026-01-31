@@ -3,63 +3,77 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Guru;
 use Illuminate\Http\Request;
 
 class GuruController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $teachers = Guru::latest()->get();
+        return view('guru.index', compact('teachers'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
+    // simpan data
     public function store(Request $request)
     {
-        //
+        $request->validate([
+            'name' => 'required',
+            'specialization' => 'required',
+            'email' => 'nullable|email',
+        ]);
+
+        Guru::create([
+            'name' => $request->name,
+            'specialization' => $request->specialization,
+            'biography' => $request->biography,
+            'email' => $request->email,
+            'phone' => $request->phone,
+        ]);
+
+        return redirect()->route('guru.index')
+            ->with('success', 'Data guru berhasil ditambahkan');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    // show / edit (AJAX)
+    public function show($id)
     {
-        //
+        $teacher = Guru::findOrFail($id);
+        return response()->json($teacher);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    // update
+    public function update(Request $request, $id)
     {
-        //
+        $request->validate([
+            'name' => 'required',
+            'specialization' => 'required',
+            'email' => 'nullable|email',
+        ]);
+
+        $teacher = Guru::findOrFail($id);
+
+        $teacher->update([
+            'name' => $request->name,
+            'specialization' => $request->specialization,
+            'biography' => $request->biography,
+            'email' => $request->email,
+            'phone' => $request->phone,
+        ]);
+
+        return redirect()->route('guru.index')
+            ->with('success', 'Data guru berhasil diperbarui');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    // delete (AJAX)
+    public function destroy($id)
     {
-        //
-    }
+        $teacher = Guru::findOrFail($id);
+        $teacher->delete();
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return response()->json([
+            'success' => true,
+            'message' => 'Data guru berhasil dihapus'
+        ]);
     }
 }
