@@ -27,14 +27,11 @@ Route::get('/home', [HomeController::class, 'index'])->name('home');
 | Program / Kelas CRUD
 |--------------------------------------------------------------------------
 */
-Route::prefix('program')->name('program.')->group(function () {
-
-    Route::get('/', [ProgramController::class, 'index'])->name('index');
-    Route::post('/store', [ProgramController::class, 'store'])->name('store');
-    Route::get('/{id}', [ProgramController::class, 'show'])->name('show');
-    Route::put('/{id}', [ProgramController::class, 'update'])->name('update');
-    Route::delete('/{id}', [ProgramController::class, 'destroy'])->name('delete');
-});
+Route::get('/program', [ProgramController::class, 'index'])->name('program.index');
+Route::post('/program', [ProgramController::class, 'store'])->name('program.store');
+Route::get('/program/{id}', [ProgramController::class, 'show'])->name('program.show'); // JSON
+Route::put('/program/{id}', [ProgramController::class, 'update'])->name('program.update');
+Route::delete('/program/{id}', [ProgramController::class, 'destroy'])->name('program.destroy'); // JSON
 
 /*
 |--------------------------------------------------------------------------

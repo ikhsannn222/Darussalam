@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Program;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ProgramController extends Controller
 {
@@ -14,58 +15,71 @@ class ProgramController extends Controller
         return view('program.index', compact('programs'));
     }
 
-    // tambah data
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required',
-            'description' => 'required',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['required'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
+        $logoPath = null;
+        if ($request->hasFile('logo')) {
+            $logoPath = $request->file('logo')->store('program-logos', 'public');
+        }
+
         Program::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'icon' => $request->icon,
+            'name' => $validated['name'],
+            'description' => $validated['description'],
+            'logo' => $logoPath,
             'is_open_registration' => $request->has('is_open_registration') ? 1 : 0,
         ]);
 
-        // redirect ke halaman index supaya SweetAlert di index tampil
-        return redirect()->route('program.index')
-            ->with('success', 'Program berhasil ditambahkan');
+        return redirect()->route('program.index')->with('success', 'Program berhasil ditambahkan');
     }
 
-    // ambil 1 data untuk view / edit (biasanya dipakai AJAX)
     public function show($id)
     {
         $program = Program::findOrFail($id);
+        $program->logo_url = $program->logo ? asset('storage/' . $program->logo) : null;
+
         return response()->json($program);
     }
 
-    // update data
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required',
-            'description' => 'required',
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'description' => ['required'],
+            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
         ]);
 
         $program = Program::findOrFail($id);
 
-        $program->update([
-            'name' => $request->name,
-            'description' => $request->description,
-            'icon' => $request->icon,
-            'is_open_registration' => $request->has('is_open_registration') ? 1 : 0,
-        ]);
+        // update logo jika ada file baru
+        if ($request->hasFile('logo')) {
+            if ($program->logo && Storage::disk('public')->exists($program->logo)) {
+                Storage::disk('public')->delete($program->logo);
+            }
+            $program->logo = $request->file('logo')->store('program-logos', 'public');
+        }
 
-        return redirect()->route('program.index')
-            ->with('success', 'Program berhasil diupdate');
+        $program->name = $validated['name'];
+        $program->description = $validated['description'];
+        $program->is_open_registration = $request->has('is_open_registration') ? 1 : 0;
+        $program->save();
+
+        return redirect()->route('program.index')->with('success', 'Program berhasil diupdate');
     }
 
-    // hapus data (dipanggil AJAX)
     public function destroy($id)
     {
         $program = Program::findOrFail($id);
+
+        if ($program->logo && Storage::disk('public')->exists($program->logo)) {
+            Storage::disk('public')->delete($program->logo);
+        }
+
         $program->delete();
 
         return response()->json([

@@ -14,22 +14,24 @@ class Guru extends Model
 
     protected $fillable = [
         'name',
-        'specialization',
+        'birth_date',
         'biography',
         'photo',
         'email',
         'phone',
     ];
 
-    /**
-     * Accessor URL foto
-     */
+    protected $casts = [
+        'birth_date' => 'date',
+    ];
+
     public function getPhotoUrlAttribute()
     {
         if ($this->photo && Storage::disk('public')->exists($this->photo)) {
             return asset('storage/' . $this->photo);
         }
 
+        // fallback default
         return asset('images/default-teacher.png');
     }
 }

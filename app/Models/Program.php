@@ -9,7 +9,7 @@ class Program extends Model
     protected $fillable = [
         'name',
         'description',
-        'icon',
+        'logo',
         'is_open_registration'
     ];
 }
