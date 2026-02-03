@@ -34,7 +34,7 @@
                   <img src="{{ $t->photo_url }}" alt="photo" style="max-height:60px; max-width:70px;">
                 </td>
                 <td>{{ $t->name }}</td>
-                <td>{{ $t->birth_date ? $t->birth_date->format('Y-m-d') : '-' }}</td>
+                <td>{{ $t->birth_date ?? '-' }}</td>
                 <td>{{ $t->email ?? '-' }}</td>
                 <td>{{ $t->phone ?? '-' }}</td>
 

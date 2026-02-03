@@ -3,67 +3,109 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Fasilitas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class FasilitasController extends Controller
 {
     public function index()
     {
-        $fasilitas = Fasilitas::latest()->get();
+        $fasilitas = DB::table('facilities')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($f) {
+                $f->image_url = $f->image
+                    ? asset('storage/' . $f->image)
+                    : null;
+                return $f;
+            });
+
         return view('fasilitas.index', compact('fasilitas'));
     }
 
-    // tambah data
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required',
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
             'description' => 'required',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        Fasilitas::create([
-            'name' => $request->name,
-            'description' => $request->description,
-            'icon' => $request->icon,
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('fasilitas-images', 'public');
+        }
+
+        DB::table('facilities')->insert([
+            'name'        => $validated['name'],
+            'description' => $validated['description'],
+            'image'       => $imagePath,
+            'created_at'  => now(),
+            'updated_at'  => now(),
         ]);
 
         return redirect()->route('fasilitas.index')
             ->with('success', 'Fasilitas berhasil ditambahkan');
     }
 
-    // ambil 1 data (AJAX show / edit)
+    // AJAX show / edit
     public function show($id)
     {
-        $fasilitas = Fasilitas::findOrFail($id);
+        $fasilitas = DB::table('facilities')->where('id', $id)->first();
+
+        if (!$fasilitas) {
+            abort(404);
+        }
+
+        $fasilitas->image_url = $fasilitas->image
+            ? asset('storage/' . $fasilitas->image)
+            : null;
+
         return response()->json($fasilitas);
     }
 
-    // update data
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required',
+        $validated = $request->validate([
+            'name'        => 'required|string|max:255',
             'description' => 'required',
+            'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $fasilitas = Fasilitas::findOrFail($id);
+        $fasilitas = DB::table('facilities')->where('id', $id)->first();
+        if (!$fasilitas) abort(404);
 
-        $fasilitas->update([
-            'name' => $request->name,
-            'description' => $request->description,
-            'icon' => $request->icon,
+        $imagePath = $fasilitas->image;
+
+        if ($request->hasFile('image')) {
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+            $imagePath = $request->file('image')->store('fasilitas-images', 'public');
+        }
+
+        DB::table('facilities')->where('id', $id)->update([
+            'name'        => $validated['name'],
+            'description' => $validated['description'],
+            'image'       => $imagePath,
+            'updated_at'  => now(),
         ]);
 
         return redirect()->route('fasilitas.index')
-            ->with('success', 'Fasilitas berhasil diupdate');
+            ->with('success', 'Fasilitas berhasil diperbarui');
     }
 
-    // hapus data (AJAX)
     public function destroy($id)
     {
-        $fasilitas = Fasilitas::findOrFail($id);
-        $fasilitas->delete();
+        $fasilitas = DB::table('facilities')->where('id', $id)->first();
+        if (!$fasilitas) abort(404);
+
+        if ($fasilitas->image && Storage::disk('public')->exists($fasilitas->image)) {
+            Storage::disk('public')->delete($fasilitas->image);
+        }
+
+        DB::table('facilities')->where('id', $id)->delete();
 
         return response()->json([
             'success' => true,

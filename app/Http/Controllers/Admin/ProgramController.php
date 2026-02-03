@@ -3,24 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Program;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ProgramController extends Controller
 {
     public function index()
     {
-        $programs = Program::latest()->get();
+        $programs = DB::table('programs')
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('program.index', compact('programs'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['required'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'name'        => 'required|string|max:255',
+            'description' => 'required',
+            'logo'        => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:2048',
         ]);
 
         $logoPath = null;
@@ -28,20 +31,27 @@ class ProgramController extends Controller
             $logoPath = $request->file('logo')->store('program-logos', 'public');
         }
 
-        Program::create([
-            'name' => $validated['name'],
-            'description' => $validated['description'],
-            'logo' => $logoPath,
-            'is_open_registration' => $request->has('is_open_registration') ? 1 : 0,
+        DB::table('programs')->insert([
+            'name'                  => $validated['name'],
+            'description'           => $validated['description'],
+            'logo'                  => $logoPath,
+            'is_open_registration'  => $request->has('is_open_registration') ? 1 : 0,
+            'created_at'            => now(),
+            'updated_at'            => now(),
         ]);
 
-        return redirect()->route('program.index')->with('success', 'Program berhasil ditambahkan');
+        return redirect()->route('program.index')
+            ->with('success', 'Program berhasil ditambahkan');
     }
 
     public function show($id)
     {
-        $program = Program::findOrFail($id);
-        $program->logo_url = $program->logo ? asset('storage/' . $program->logo) : null;
+        $program = DB::table('programs')->where('id', $id)->first();
+        abort_if(!$program, 404);
+
+        $program->logo_url = $program->logo
+            ? asset('storage/' . $program->logo)
+            : null;
 
         return response()->json($program);
     }
@@ -49,38 +59,45 @@ class ProgramController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['required'],
-            'logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:2048'],
+            'name'        => 'required|string|max:255',
+            'description' => 'required',
+            'logo'        => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:2048',
         ]);
 
-        $program = Program::findOrFail($id);
+        $program = DB::table('programs')->where('id', $id)->first();
+        abort_if(!$program, 404);
 
-        // update logo jika ada file baru
+        $logoPath = $program->logo;
+
         if ($request->hasFile('logo')) {
             if ($program->logo && Storage::disk('public')->exists($program->logo)) {
                 Storage::disk('public')->delete($program->logo);
             }
-            $program->logo = $request->file('logo')->store('program-logos', 'public');
+            $logoPath = $request->file('logo')->store('program-logos', 'public');
         }
 
-        $program->name = $validated['name'];
-        $program->description = $validated['description'];
-        $program->is_open_registration = $request->has('is_open_registration') ? 1 : 0;
-        $program->save();
+        DB::table('programs')->where('id', $id)->update([
+            'name'                 => $validated['name'],
+            'description'          => $validated['description'],
+            'logo'                 => $logoPath,
+            'is_open_registration' => $request->has('is_open_registration') ? 1 : 0,
+            'updated_at'           => now(),
+        ]);
 
-        return redirect()->route('program.index')->with('success', 'Program berhasil diupdate');
+        return redirect()->route('program.index')
+            ->with('success', 'Program berhasil diupdate');
     }
 
     public function destroy($id)
     {
-        $program = Program::findOrFail($id);
+        $program = DB::table('programs')->where('id', $id)->first();
+        abort_if(!$program, 404);
 
         if ($program->logo && Storage::disk('public')->exists($program->logo)) {
             Storage::disk('public')->delete($program->logo);
         }
 
-        $program->delete();
+        DB::table('programs')->where('id', $id)->delete();
 
         return response()->json([
             'success' => true,

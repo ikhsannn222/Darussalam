@@ -3,27 +3,36 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Guru;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class GuruController extends Controller
 {
     public function index()
     {
-        $teachers = Guru::latest()->get();
+        $teachers = DB::table('teachers')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function ($t) {
+                $t->photo_url = $t->photo
+                    ? asset('storage/' . $t->photo)
+                    : null;
+                return $t;
+            });
+
         return view('guru.index', compact('teachers'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'birth_date' => ['nullable', 'date'],
-            'biography' => ['nullable'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'email' => ['nullable', 'email'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'name'       => 'required|string|max:255',
+            'birth_date' => 'nullable|date',
+            'biography'  => 'nullable',
+            'photo'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'email'      => 'nullable|email',
+            'phone'      => 'nullable|string|max:50',
         ]);
 
         $photoPath = null;
@@ -31,13 +40,15 @@ class GuruController extends Controller
             $photoPath = $request->file('photo')->store('teacher-photos', 'public');
         }
 
-        Guru::create([
-            'name' => $validated['name'],
+        DB::table('teachers')->insert([
+            'name'       => $validated['name'],
             'birth_date' => $validated['birth_date'] ?? null,
-            'biography' => $validated['biography'] ?? null, // HTML dari CKEditor
-            'photo' => $photoPath,
-            'email' => $validated['email'] ?? null,
-            'phone' => $validated['phone'] ?? null,
+            'biography'  => $validated['biography'] ?? null,
+            'photo'      => $photoPath,
+            'email'      => $validated['email'] ?? null,
+            'phone'      => $validated['phone'] ?? null,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return redirect()->route('guru.index')
@@ -46,10 +57,12 @@ class GuruController extends Controller
 
     public function show($id)
     {
-        $teacher = Guru::findOrFail($id);
+        $teacher = DB::table('teachers')->where('id', $id)->first();
+        if (!$teacher) abort(404);
 
-        // bantu frontend
-        $teacher->photo_url = $teacher->photo_url;
+        $teacher->photo_url = $teacher->photo
+            ? asset('storage/' . $teacher->photo)
+            : null;
 
         return response()->json($teacher);
     }
@@ -57,30 +70,35 @@ class GuruController extends Controller
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'birth_date' => ['nullable', 'date'],
-            'biography' => ['nullable'],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
-            'email' => ['nullable', 'email'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'name'       => 'required|string|max:255',
+            'birth_date' => 'nullable|date',
+            'biography'  => 'nullable',
+            'photo'      => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'email'      => 'nullable|email',
+            'phone'      => 'nullable|string|max:50',
         ]);
 
-        $teacher = Guru::findOrFail($id);
+        $teacher = DB::table('teachers')->where('id', $id)->first();
+        if (!$teacher) abort(404);
 
-        // upload foto baru -> hapus foto lama
+        $photoPath = $teacher->photo;
+
         if ($request->hasFile('photo')) {
-            if ($teacher->photo && Storage::disk('public')->exists($teacher->photo)) {
-                Storage::disk('public')->delete($teacher->photo);
+            if ($photoPath && Storage::disk('public')->exists($photoPath)) {
+                Storage::disk('public')->delete($photoPath);
             }
-            $teacher->photo = $request->file('photo')->store('teacher-photos', 'public');
+            $photoPath = $request->file('photo')->store('teacher-photos', 'public');
         }
 
-        $teacher->name = $validated['name'];
-        $teacher->birth_date = $validated['birth_date'] ?? null;
-        $teacher->biography = $validated['biography'] ?? null;
-        $teacher->email = $validated['email'] ?? null;
-        $teacher->phone = $validated['phone'] ?? null;
-        $teacher->save();
+        DB::table('teachers')->where('id', $id)->update([
+            'name'       => $validated['name'],
+            'birth_date' => $validated['birth_date'] ?? null,
+            'biography'  => $validated['biography'] ?? null,
+            'photo'      => $photoPath,
+            'email'      => $validated['email'] ?? null,
+            'phone'      => $validated['phone'] ?? null,
+            'updated_at' => now(),
+        ]);
 
         return redirect()->route('guru.index')
             ->with('success', 'Data guru berhasil diperbarui');
@@ -88,13 +106,14 @@ class GuruController extends Controller
 
     public function destroy($id)
     {
-        $teacher = Guru::findOrFail($id);
+        $teacher = DB::table('teachers')->where('id', $id)->first();
+        if (!$teacher) abort(404);
 
         if ($teacher->photo && Storage::disk('public')->exists($teacher->photo)) {
             Storage::disk('public')->delete($teacher->photo);
         }
 
-        $teacher->delete();
+        DB::table('teachers')->where('id', $id)->delete();
 
         return response()->json([
             'success' => true,
