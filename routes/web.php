@@ -1,10 +1,12 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\ProgramController;
 use App\Http\Controllers\Admin\FasilitasController;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\GuruController;
+use App\Http\Controllers\Admin\ProgramController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Admin\TestimoniController;
+use App\Http\Controllers\Admin\MapController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,7 +49,6 @@ Route::prefix('fasilitas')->name('fasilitas.')->group(function () {
     Route::delete('/{id}', [FasilitasController::class, 'destroy'])->name('delete');
 });
 
-
 /*
 |--------------------------------------------------------------------------
 | Guru CRUD
@@ -60,5 +61,20 @@ Route::prefix('guru')->name('guru.')->group(function () {
     Route::get('/{id}', [GuruController::class, 'show'])->name('show');
     Route::put('/{id}', [GuruController::class, 'update'])->name('update');
     Route::delete('/{id}', [GuruController::class, 'destroy'])->name('delete');
+});
+
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::resource('pendaftaran', \App\Http\Controllers\Admin\PendaftaranController::class);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/testimoni', [TestimoniController::class, 'index'])->name('testimoni.index');
+    Route::post('/testimoni', [TestimoniController::class, 'store'])->name('testimoni.store');
+    Route::patch('/testimoni/{testimoni}/approve', [TestimoniController::class, 'approve'])->name('testimoni.approve');
+    Route::delete('/testimoni/{testimoni}', [TestimoniController::class, 'destroy'])->name('testimoni.destroy');
+});
+
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::get('/maps', [MapController::class, 'index'])->name('maps.index');
 });
 

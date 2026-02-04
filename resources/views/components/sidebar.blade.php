@@ -62,11 +62,24 @@
     </li>
 
     <li class="menu-item">
-      <a href="#" class="menu-link">
+      <a href="{{ route('pendaftaran.index') }}" class="menu-link">
         <i class="menu-icon tf-icons bx bx-clipboard"></i>
         <div class="text-truncate">Pendaftaran</div>
       </a>
     </li>
 
+     <li class="menu-item">
+      <a href="{{ route('testimoni.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-clipboard"></i>
+        <div class="text-truncate">Testimoni</div>
+      </a>
+    </li>
+
+    <li class="menu-item">
+      <a href="{{ route('maps.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-clipboard"></i>
+        <div class="text-truncate">Lokasi</div>
+      </a>
+    </li>
   </ul>
 </aside>
