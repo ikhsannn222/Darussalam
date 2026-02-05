@@ -1,12 +1,15 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FasilitasController;
 use App\Http\Controllers\Admin\GuruController;
 use App\Http\Controllers\Admin\ProgramController;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\Admin\TestimoniController;
+use App\Http\Controllers\Admin\KegiatanController;
 use App\Http\Controllers\Admin\MapController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\PendaftaranController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,34 +17,38 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
-
-/* Auth bawaan Laravel */
+/* ================= AUTH ================= */
 Auth::routes();
 
-/* Home setelah login */
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+/* ================= DASHBOARD ================= */
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/', [DashboardController::class, 'index'])
+        ->name('dashboard.index');
+
+    Route::get('/home', [HomeController::class, 'index'])
+        ->name('home');
+});
 
 /*
 |--------------------------------------------------------------------------
-| Program / Kelas CRUD
+| Program / Kelas
 |--------------------------------------------------------------------------
 */
-Route::get('/program', [ProgramController::class, 'index'])->name('program.index');
-Route::post('/program', [ProgramController::class, 'store'])->name('program.store');
-Route::get('/program/{id}', [ProgramController::class, 'show'])->name('program.show'); // JSON
-Route::put('/program/{id}', [ProgramController::class, 'update'])->name('program.update');
-Route::delete('/program/{id}', [ProgramController::class, 'destroy'])->name('program.destroy'); // JSON
+Route::middleware('auth')->group(function () {
+    Route::get('/program', [ProgramController::class, 'index'])->name('program.index');
+    Route::post('/program', [ProgramController::class, 'store'])->name('program.store');
+    Route::get('/program/{id}', [ProgramController::class, 'show'])->name('program.show');
+    Route::put('/program/{id}', [ProgramController::class, 'update'])->name('program.update');
+    Route::delete('/program/{id}', [ProgramController::class, 'destroy'])->name('program.destroy');
+});
 
 /*
 |--------------------------------------------------------------------------
-| Fasilitas CRUD
+| Fasilitas
 |--------------------------------------------------------------------------
 */
-Route::prefix('fasilitas')->name('fasilitas.')->group(function () {
-
+Route::prefix('fasilitas')->middleware('auth')->name('fasilitas.')->group(function () {
     Route::get('/', [FasilitasController::class, 'index'])->name('index');
     Route::post('/store', [FasilitasController::class, 'store'])->name('store');
     Route::get('/{id}', [FasilitasController::class, 'show'])->name('show');
@@ -51,11 +58,10 @@ Route::prefix('fasilitas')->name('fasilitas.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Guru CRUD
+| Guru
 |--------------------------------------------------------------------------
 */
-Route::prefix('guru')->name('guru.')->group(function () {
-
+Route::prefix('guru')->middleware('auth')->name('guru.')->group(function () {
     Route::get('/', [GuruController::class, 'index'])->name('index');
     Route::post('/store', [GuruController::class, 'store'])->name('store');
     Route::get('/{id}', [GuruController::class, 'show'])->name('show');
@@ -63,10 +69,20 @@ Route::prefix('guru')->name('guru.')->group(function () {
     Route::delete('/{id}', [GuruController::class, 'destroy'])->name('delete');
 });
 
-Route::prefix('admin')->middleware(['auth'])->group(function () {
-    Route::resource('pendaftaran', \App\Http\Controllers\Admin\PendaftaranController::class);
+/*
+|--------------------------------------------------------------------------
+| Pendaftaran
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->middleware('auth')->group(function () {
+    Route::resource('pendaftaran', PendaftaranController::class);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Testimoni
+|--------------------------------------------------------------------------
+*/
 Route::middleware('auth')->group(function () {
     Route::get('/testimoni', [TestimoniController::class, 'index'])->name('testimoni.index');
     Route::post('/testimoni', [TestimoniController::class, 'store'])->name('testimoni.store');
@@ -74,7 +90,24 @@ Route::middleware('auth')->group(function () {
     Route::delete('/testimoni/{testimoni}', [TestimoniController::class, 'destroy'])->name('testimoni.destroy');
 });
 
-Route::prefix('admin')->middleware(['auth'])->group(function () {
-    Route::get('/maps', [MapController::class, 'index'])->name('maps.index');
+/*
+|--------------------------------------------------------------------------
+| Kegiatan
+|--------------------------------------------------------------------------
+*/
+Route::prefix('kegiatan')->middleware('auth')->name('kegiatan.')->group(function () {
+    Route::get('/', [KegiatanController::class, 'index'])->name('index');
+    Route::post('/store', [KegiatanController::class, 'store'])->name('store');
+    Route::get('/{id}', [KegiatanController::class, 'show'])->name('show');
+    Route::put('/{id}', [KegiatanController::class, 'update'])->name('update');
+    Route::delete('/{id}', [KegiatanController::class, 'destroy'])->name('delete');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Maps (khusus tampil peta)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->middleware('auth')->group(function () {
+    Route::get('/maps', [MapController::class, 'index'])->name('maps.index');
+});
