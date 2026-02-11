@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->text('description');
-            $table->string('logo')->nullable(); // simpan path file, contoh: program-logos/xxx.png
+            $table->string('logo')->nullable();
             $table->boolean('is_open_registration')->default(false);
             $table->timestamps();
         });
