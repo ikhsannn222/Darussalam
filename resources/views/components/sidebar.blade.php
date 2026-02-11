@@ -100,5 +100,12 @@
       </a>
     </li>
 
+     <li class="menu-item {{ request()->is('maps*') ? 'active' : '' }}">
+      <a href="{{ route('prestasi.index') }}" class="menu-link">
+        <i class="menu-icon tf-icons bx bx-map"></i>
+        <div>Prestasi</div>
+      </a>
+    </li>
+
   </ul>
 </aside>
